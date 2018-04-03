@@ -31,6 +31,7 @@ import org.openkilda.messaging.Utils;
 import org.openkilda.messaging.command.CommandData;
 import org.openkilda.messaging.command.CommandMessage;
 import org.openkilda.messaging.command.discovery.MarkOfflineCommandData;
+import org.openkilda.messaging.command.discovery.SyncNetworkCommandData;
 import org.openkilda.messaging.ctrl.AbstractDumpState;
 import org.openkilda.messaging.ctrl.state.OFELinkBoltState;
 import org.openkilda.messaging.info.InfoData;
@@ -109,6 +110,7 @@ public class OFELinkBolt
     private float dumpRequestTimeout;
     private Timer dumpRequestTimer;
     private Long dropEverithingOlder = null;
+    private boolean isInitRequeired = true;
 
     /**
      * Default constructor .. default health check frequency
@@ -160,29 +162,40 @@ public class OFELinkBolt
     protected void doTick(Tuple tuple) {
         boolean isSpeakerAvailable = watchDog.isAvailable();
 
+        if (isInitRequeired) {
+            isInitRequeired = false;
+            logger.debug("Perform {} bolt initialisation", getClass().getName());
+            sendMessage(tuple, new MarkOfflineCommandData(), STREAM_ID_TOPO_ENGINE);
+        }
+
         if (isOnline != isSpeakerAvailable) {
             if (isSpeakerAvailable) {
                 logger.warn("Floodlight is available, switching WFM into online mode");
                 dumpRequestCorrelationId = null;
             } else {
                 logger.warn("Floodlight is not available, switching WFM into offline mode");
+                sendMessage(tuple, new MarkOfflineCommandData(), STREAM_ID_TOPO_ENGINE);
                 dropEverithingOlder = null;
             }
         }
         isOnline = isSpeakerAvailable;
 
+        logger.error("DEBUG: pre online check");
         if (! isOnline) {
             return;
         }
 
-        if (dumpRequestCorrelationId != null)
+        logger.error("DEBUG: pre doTick main log");
+        if (dumpRequestCorrelationId == null)
         {
+            logger.error("DEBUG: request sync");
             // Only one message to FL needed
             dumpRequestCorrelationId = sendNetworkSyncRequest(tuple);
             enableDumpRequestTimer();
         }
         else if (dropEverithingOlder != null)
         {
+            logger.error("DEBUG: main tick branch");
             // On first tick(or after network outage), we send network dump request to FL,
             // and then we ignore all ticks till cache not received
             DiscoveryManager.Plan discoveryPlan = discovery.makeDiscoveryPlan();
@@ -216,7 +229,7 @@ public class OFELinkBolt
         logger.debug("Send network dump request");
 
         String correlationId = UUID.randomUUID().toString();
-        sendMessage(tuple, new MarkOfflineCommandData(), STREAM_ID_TOPO_ENGINE);
+        sendMessage(tuple, new SyncNetworkCommandData(), STREAM_ID_SPEAKER);
 
         return correlationId;
     }
@@ -253,7 +266,7 @@ public class OFELinkBolt
 
         logger.debug("Got input message, message timestamp {} current timestamp is {}", timestamp, localTime);
         double inputAge = calcInputMessageAge(tuple);
-        if (dropOutdatedInputIn < inputAge) {
+        if (dropEverithingOlder == null && dropOutdatedInputIn < inputAge) {
             logger.warn("Drop input message due to age {} (age limit {})", inputAge, dropOutdatedInputIn);
             collector.ack(tuple);
             return;
@@ -265,6 +278,9 @@ public class OFELinkBolt
 
             if (bm instanceof InfoMessage) {
                 InfoData data = ((InfoMessage)bm).getData();
+
+                logger.error("DEBUG: input processing of {}", data.getClass().getName());
+
                 if (data instanceof NetworkSyncMarker) {
                     handleNetworkSync(tuple, ((InfoMessage)bm).getCorrelationId());
                 } else if (dropEverithingOlder == null) {
