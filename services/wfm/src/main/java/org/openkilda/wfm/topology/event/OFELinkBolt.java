@@ -70,6 +70,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.openkilda.messaging.Utils.MAPPER;
+import static org.openkilda.messaging.Utils.PAYLOAD;
+
 /**
  * This class is the main class for tracking network topology. The most complicated part of
  * the network topology is links and generating health checks.
@@ -177,7 +180,6 @@ public class OFELinkBolt
                 dumpRequestCorrelationId = null;
             } else {
                 logger.warn("Switch into OFFLINE mode");
-                sendMessage(tuple, new MarkOfflineCommandData(), STREAM_ID_TOPO_ENGINE);
                 dropEverithingOlder = null;
             }
         }
@@ -190,7 +192,8 @@ public class OFELinkBolt
         if (dumpRequestCorrelationId != null)
         {
             // Only one message to FL needed
-            dumpRequestCorrelationId = sendNetworkRequest(tuple);
+            dumpRequestCorrelationId = sendNetworkSyncRequest(tuple);
+            enableDumpRequestTimer();
         }
         else if (dropEverithingOlder != null)
         {
@@ -216,31 +219,18 @@ public class OFELinkBolt
         else if (dumpRequestTimer.isExpiredResetOnTrue())
         {
             logger.error("Did not get network dump, send one more dump request");
-            sendNetworkRequest(tuple);
+            sendNetworkSyncRequest(tuple);
         }
     }
 
     /**
      * Send network dump request to FL
      */
-    private String sendNetworkRequest(Tuple tuple) {
-        String correlationId = null;
-	// TODO
+    private String sendNetworkSyncRequest(Tuple tuple) {
+        logger.debug("Send network dump request");
 
-        try {
-            logger.debug("Send network dump request");
-
-            correlationId = UUID.randomUUID().toString();
-            CommandMessage command = new CommandMessage(new NetworkCommandData(),
-                    System.currentTimeMillis(), correlationId,
-                    Destination.CONTROLLER);
-            String json = Utils.MAPPER.writeValueAsString(command);
-            collector.emit(islDiscoveryTopic, tuple, new Values(PAYLOAD, json));
-        }
-        catch (JsonProcessingException exception)
-        {
-            logger.error("Could not serialize network cache request", exception);
-        }
+        String correlationId = UUID.randomUUID().toString();
+        sendMessage(tuple, new MarkOfflineCommandData(), STREAM_ID_TOPO_ENGINE);
 
         return correlationId;
     }
@@ -253,7 +243,6 @@ public class OFELinkBolt
         logger.debug("LINK: Send ISL discovery command: {}", json);
         collector.emit(STREAM_ID_SPEAKER, tuple, new Values(PAYLOAD, json));
     }
-
 
     @Override
     protected void doWork(Tuple tuple) {
@@ -290,7 +279,7 @@ public class OFELinkBolt
             if (bm instanceof InfoMessage) {
                 InfoData data = ((InfoMessage)bm).getData();
                 if (data instanceof NetworkSyncMarker) {
-                    handleNetworkDump(tuple, (NetworkInfoData)data, ((InfoMessage)bm).getCorrelationId());
+                    handleNetworkSync(tuple, ((InfoMessage)bm).getCorrelationId());
                 } else if (dropEverithingOlder == null) {
                     logger.debug("Bolt is not initialized mark tuple as fail");
                 } else if (timestamp < dropEverithingOlder) {
@@ -322,21 +311,17 @@ public class OFELinkBolt
         }
     }
 
-    private void handleNetworkDump(Tuple tuple, NetworkInfoData data, String correlationId) {
-	// TODO
-        logger.info("Start process network dump");
+    private void handleNetworkSync(Tuple tuple, String correlationId) {
+        logger.info("Got response on network sync");
         if (dumpRequestCorrelationId == null) {
-            logger.warn("Got network dump, but we don't request it");
+            logger.warn("Got network sync, but we didn't request it");
         } else if (dumpRequestCorrelationId.equals(correlationId)) {
-            data.getSwitches().forEach(switchInfo -> handleSwitchEvent(tuple, switchInfo));
-            data.getPorts().forEach(portInfo -> handlePortEvent(tuple, portInfo));
-
             dropEverithingOlder = tuple.getLongByField(KafkaRecordTranslator.FIELD_ID_TIMESTAMP);
             dumpRequestCorrelationId = null;
         } else {
-            logger.warn("Skip network dump response with mismatch correlation id");
+            logger.warn("Skip network sync response with mismatch correlation id");
         }
-        logger.info("Finish process network dump");
+        logger.info("Finish process network sync");
     }
 
     private void handleSwitchEvent(Tuple tuple, SwitchInfoData switchData) {

@@ -577,10 +577,10 @@ class RecordHandler implements Runnable {
 
         Map<DatapathId, IOFSwitch> allSwitchMap = context.getSwitchManager().getAllSwitchMap();
 
-        final String correlationId = UUID.randomUUID().toString();
         context.getKafkaProducer().postMessage(OUTPUT_DISCO_TOPIC,
-                new InfoMessage(new NetworkSyncMarker(), System.currentTimeMillis(), correlationId));
+                new InfoMessage(new NetworkSyncMarker(), System.currentTimeMillis(), message.getCorrelationId()));
 
+        final String correlationId = UUID.randomUUID().toString();
         allSwitchMap.values().stream()
                 .map(this::buildSwitchInfoData)
                 .forEach(sw ->
