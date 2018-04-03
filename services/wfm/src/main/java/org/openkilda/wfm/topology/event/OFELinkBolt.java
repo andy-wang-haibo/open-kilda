@@ -15,9 +15,6 @@
 
 package org.openkilda.wfm.topology.event;
 
-import static org.openkilda.messaging.Utils.MAPPER;
-import static org.openkilda.messaging.Utils.PAYLOAD;
-
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.storm.kafka.spout.internal.Timer;
 import org.apache.storm.state.KeyValueState;
@@ -34,20 +31,12 @@ import org.openkilda.messaging.Utils;
 import org.openkilda.messaging.command.CommandData;
 import org.openkilda.messaging.command.CommandMessage;
 import org.openkilda.messaging.command.discovery.MarkOfflineCommandData;
-import org.openkilda.messaging.command.discovery.SyncNetworkCommandData;
 import org.openkilda.messaging.ctrl.AbstractDumpState;
 import org.openkilda.messaging.ctrl.state.OFELinkBoltState;
 import org.openkilda.messaging.info.InfoData;
 import org.openkilda.messaging.info.InfoMessage;
-import org.openkilda.messaging.info.discovery.NetworkInfoData;
 import org.openkilda.messaging.info.discovery.NetworkSyncMarker;
-import org.openkilda.messaging.info.event.IslChangeType;
-import org.openkilda.messaging.info.event.IslInfoData;
-import org.openkilda.messaging.info.event.PathNode;
-import org.openkilda.messaging.info.event.PortChangeType;
-import org.openkilda.messaging.info.event.PortInfoData;
-import org.openkilda.messaging.info.event.SwitchInfoData;
-import org.openkilda.messaging.info.event.SwitchState;
+import org.openkilda.messaging.info.event.*;
 import org.openkilda.messaging.model.DiscoveryNode;
 import org.openkilda.wfm.OFEMessageUtils;
 import org.openkilda.wfm.WatchDog;
@@ -63,11 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.openkilda.messaging.Utils.MAPPER;
@@ -176,10 +162,10 @@ public class OFELinkBolt
 
         if (isOnline != isSpeakerAvailable) {
             if (isSpeakerAvailable) {
-                logger.warn("Switch into ONLINE mode");
+                logger.warn("Floodlight is available, switching WFM into online mode");
                 dumpRequestCorrelationId = null;
             } else {
-                logger.warn("Switch into OFFLINE mode");
+                logger.warn("Floodlight is not available, switching WFM into offline mode");
                 dropEverithingOlder = null;
             }
         }
