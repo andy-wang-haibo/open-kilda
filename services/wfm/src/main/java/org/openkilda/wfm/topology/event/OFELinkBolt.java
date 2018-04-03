@@ -216,7 +216,7 @@ public class OFELinkBolt
                 logger.error("Unable to encode message: {}", e);
             }
         }
-        else if (dumpRequestTimer.isExpiredResetOnTrue())
+        else if (dumpRequestTimer != null && dumpRequestTimer.isExpiredResetOnTrue())
         {
             logger.error("Did not get network dump, send one more dump request");
             sendNetworkSyncRequest(tuple);
@@ -263,8 +263,9 @@ public class OFELinkBolt
 
         String json = tuple.getStringByField(KafkaRecordTranslator.FIELD_ID_PAYLOAD);
         long timestamp = tuple.getLongByField(KafkaRecordTranslator.FIELD_ID_TIMESTAMP);
+        long localTime = System.currentTimeMillis();
 
-        logger.debug("Got input message, message timestamp {} current timestamp is {}", timestamp);
+        logger.debug("Got input message, message timestamp {} current timestamp is {}", timestamp, localTime);
         double inputAge = calcInputMessageAge(tuple);
         if (dropOutdatedInputIn < inputAge) {
             logger.warn("Drop input message due to age {} (age limit {})", inputAge, dropOutdatedInputIn);
@@ -318,6 +319,7 @@ public class OFELinkBolt
         } else if (dumpRequestCorrelationId.equals(correlationId)) {
             dropEverithingOlder = tuple.getLongByField(KafkaRecordTranslator.FIELD_ID_TIMESTAMP);
             dumpRequestCorrelationId = null;
+            dumpRequestTimer = null;
         } else {
             logger.warn("Skip network sync response with mismatch correlation id");
         }

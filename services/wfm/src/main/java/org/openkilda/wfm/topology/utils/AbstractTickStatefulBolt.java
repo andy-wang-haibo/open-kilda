@@ -78,11 +78,7 @@ public abstract class AbstractTickStatefulBolt<T extends State> extends BaseStat
     @Override
     public void execute(Tuple tuple) {
         if (isTickTuple(tuple)) {
-            try {
-                doTick(tuple);
-            } finally {
-                _collector.ack(tuple);
-            }
+            doTick(tuple);
         } else {
             doWork(tuple);
         }
