@@ -15,7 +15,7 @@
 
 FROM kilda/hbase
 ADD ansible /ansible
-RUN ansible-playbook -v -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 ADD conf/opentsdb.conf /etc/opentsdb/opentsdb.conf
 ADD app /app
 RUN chmod 777 /app/*

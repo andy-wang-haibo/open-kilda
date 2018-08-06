@@ -17,6 +17,6 @@ FROM kilda/base-ubuntu
 # tar should be pre-populated with the tarball; see the top level Makefile (build-base:)
 ADD tar /src
 ADD ansible /ansible
-RUN ansible-playbook -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 ADD kafka-conf/server.properties /opt/kafka/config/server.properties
 ADD kafka-conf/run_and_configure.sh /opt/kafka/bin/

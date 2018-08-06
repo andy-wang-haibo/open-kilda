@@ -17,7 +17,7 @@ FROM kilda/base-ubuntu
 ADD ansible /ansible
 # tar should be pre-populated with the tarball; see the top level Makefile (build-base:)
 ADD tar /src
-RUN ansible-playbook -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 ADD hbase-conf/hbase-env.sh /opt/hbase/conf/hbase-env.sh
 ADD hbase-conf/hbase-site.xml /opt/hbase/conf/hbase-site.xml
 ADD hbase-conf/start-hbase /opt/hbase/bin/start-hbase

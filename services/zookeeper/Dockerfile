@@ -17,11 +17,10 @@ FROM kilda/base-ubuntu
 ADD ansible /ansible
 # tar should be pre-populated with the tarball; see the top level Makefile (build-base:)
 ADD tar/ /src
-RUN ansible-playbook -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 ADD zookeeper-conf/zoo.cfg /opt/zookeeper/conf/zoo.cfg
 ADD zookeeper-conf/log4j.properties /opt/zookeeper/conf/log4j.properties
 
 EXPOSE 2181 2888 3888
 
 WORKDIR /opt/zookeeper
-

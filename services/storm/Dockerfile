@@ -17,7 +17,7 @@ FROM kilda/base-ubuntu
 # tar should be pre-populated with the tarball; see the top level Makefile (build-base:)
 ADD tar /src
 ADD ansible /ansible
-RUN ansible-playbook -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 ADD conf/storm.yaml /opt/storm/conf/storm.yaml
 ADD log4j2 /opt/storm/log4j2
 ADD lib /opt/local/lib

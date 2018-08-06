@@ -16,7 +16,7 @@
 FROM kilda/base-ubuntu
 
 ADD ansible /ansible
-RUN ansible-playbook -s /ansible/deploy.yml
+RUN ansible-playbook -b /ansible/deploy.yml
 
 #
 # https://github.com/neo4j-contrib/neo4j-apoc-procedures#version-compatibility-matrix
