@@ -1,40 +1,54 @@
-package org.openkilda.wfm.topology.ifmon.utils;
+/* Copyright 2017 Telstra Open Source
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
-import java.util.List;
-import java.util.stream.Collectors;
+package org.openkilda.wfm.topology.ifmon.utils;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @JsonSerialize
 @JsonInclude(JsonInclude.Include.NON_NULL)
-
 public class PisGetSwitchResponsePayload {
 
-	@JsonProperty("switches")
-	private List<PisSwitch> switches;
+    @JsonProperty("switches")
+    private List<PisSwitch> switches;
 
-	@JsonCreator
-	public PisGetSwitchResponsePayload(@JsonProperty("switches") final List<PisSwitch> switches) {
-		this.switches = switches;
-	}
+    @JsonCreator
+    public PisGetSwitchResponsePayload(@JsonProperty("switches") final List<PisSwitch> switches) {
+        this.switches = switches;
+    }
 
-	public List<PisSwitch> getSwitches() {
-		return switches;
-	}
+    public List<PisSwitch> getSwitches() {
+        return switches;
+    }
 
-	public void setSwitches(List<PisSwitch> switches) {
-		this.switches = switches;
-	}
+    public void setSwitches(List<PisSwitch> switches) {
+        this.switches = switches;
+    }
 
-	@Override
-	public String toString() {
+    @Override
+    public String toString() {
 
-		List<String> allSwitches = switches.stream().map(x -> x.toString()).collect(Collectors.toList());
+        List<String> allSwitches = switches.stream().map(x -> x.toString()).collect(Collectors.toList());
 
-		return "PisGetSwitchResponsePayload [switches=" + String.join("\n", allSwitches) + "]";
-	}
+        return "PisGetSwitchResponsePayload [switches=" + String.join("\n", allSwitches) + "]";
+    }
 
 }

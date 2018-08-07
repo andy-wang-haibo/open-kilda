@@ -1,3 +1,18 @@
+/* Copyright 2017 Telstra Open Source
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
 package org.openkilda.wfm.topology.ifmon.utils;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -11,88 +26,98 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(value = { "circuitid", "cablebearerid", "notes"})
 @JsonIgnoreProperties({ "assignmenttype", "interfacetype", "status", "crossconnect", "odfmdf", "mmr",
-		"remoteswitchcode", "remoteport", "provider", "bandwidth", "latency", "farenddescription", "helpdeskphone",
-		"comment", "email", "faulthistory" })
+        "remoteswitchcode", "remoteport", "provider", "bandwidth", "latency", "farenddescription", "helpdeskphone",
+        "comment", "email", "faulthistory" })
 public class PisSwitchPortResponsePayload {
 
-	@JsonProperty("circuitid")
-	private String circuitId;
-	@JsonProperty("cablebearerid")
-	private String cableBearerId;
-	@JsonProperty("notes")
-	private String notes;
+    @JsonProperty("circuitid")
+    private String circuitId;
+    @JsonProperty("cablebearerid")
+    private String cableBearerId;
+    @JsonProperty("notes")
+    private String notes;
 
-	@JsonCreator
-	public PisSwitchPortResponsePayload(@JsonProperty("circuitid") final String circuitId,
-			@JsonProperty("cablebearerid") String cableBearerId, @JsonProperty("notes") final String notes) {
+    @JsonCreator
+    public PisSwitchPortResponsePayload(@JsonProperty("circuitid") final String circuitId,
+            @JsonProperty("cablebearerid") String cableBearerId, @JsonProperty("notes") final String notes) {
 
-		this.circuitId = circuitId;
-		this.cableBearerId = cableBearerId;
-		this.notes = notes;
-	}
+        this.circuitId = circuitId;
+        this.cableBearerId = cableBearerId;
+        this.notes = notes;
+    }
 
-	public String getCircuitId() {
-		return circuitId;
-	}
+    public String getCircuitId() {
+        return circuitId;
+    }
 
-	public void setCircuitId(String circuitId) {
-		this.circuitId = circuitId;
-	}
+    public void setCircuitId(String circuitId) {
+        this.circuitId = circuitId;
+    }
 
-	public String getCableBearerId() {
-		return cableBearerId;
-	}
+    public String getCableBearerId() {
+        return cableBearerId;
+    }
 
-	public void setCableBearerId(String cableBearerId) {
-		this.cableBearerId = cableBearerId;
-	}
+    public void setCableBearerId(String cableBearerId) {
+        this.cableBearerId = cableBearerId;
+    }
 
-	public String getNotes() {
-		return notes;
-	}
+    public String getNotes() {
+        return notes;
+    }
 
-	public void setNotes(String notes) {
-		this.notes = notes;
-	}
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((cableBearerId == null) ? 0 : cableBearerId.hashCode());
-		result = prime * result + ((circuitId == null) ? 0 : circuitId.hashCode());
-		result = prime * result + ((notes == null) ? 0 : notes.hashCode());
-		return result;
-	}
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((cableBearerId == null) ? 0 : cableBearerId.hashCode());
+        result = prime * result + ((circuitId == null) ? 0 : circuitId.hashCode());
+        result = prime * result + ((notes == null) ? 0 : notes.hashCode());
+        return result;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		PisSwitchPortResponsePayload other = (PisSwitchPortResponsePayload) obj;
-		if (cableBearerId == null) {
-			if (other.cableBearerId != null)
-				return false;
-		} else if (!cableBearerId.equals(other.cableBearerId))
-			return false;
-		if (circuitId == null) {
-			if (other.circuitId != null)
-				return false;
-		} else if (!circuitId.equals(other.circuitId))
-			return false;
-		if (notes == null) {
-			if (other.notes != null)
-				return false;
-		} else if (!notes.equals(other.notes))
-			return false;
-		return true;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        PisSwitchPortResponsePayload other = (PisSwitchPortResponsePayload) obj;
+        
+        if (cableBearerId == null) {
+            if (other.cableBearerId != null) {
+                return false;
+            }
+        } else if (!cableBearerId.equals(other.cableBearerId)) {
+            return false;
+        }
+        if (circuitId == null) {
+            if (other.circuitId != null) {
+                return false;
+            }
+        } else if (!circuitId.equals(other.circuitId)) {
+            return false;
+        }
+        if (notes == null) {
+            if (other.notes != null) {
+                return false;
+            }
+        } else if (!notes.equals(other.notes)) {
+            return false;
+        }
+        return true;
+    }
 
 
-	
-	
+    
+    
 }
