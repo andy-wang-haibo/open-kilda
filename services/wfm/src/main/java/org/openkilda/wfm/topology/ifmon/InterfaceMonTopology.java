@@ -71,8 +71,12 @@ public class InterfaceMonTopology extends AbstractTopology<InterfaceMonTopologyC
 
         // Potential problematic interface metrics will trigger alert to both Kabana and
         // Alertera
-        InterfaceMetricAlerterBolt alerterBolt = new InterfaceMetricAlerterBolt(config.getTpnEndpoint(),
-                config.getTpnUsername(), config.getTpnPassword());
+        InterfaceMetricAlerterBolt alerterBolt = new InterfaceMetricAlerterBolt(
+                config.getTpnEndpoint(),
+                config.getTpnUsername(), 
+                config.getTpnPassword(),
+                config.getAlertaEndpoint(),
+                config.getAlertApiKey());
         builder.setBolt(INTERFACE_MON_ALERTER_BOLT, alerterBolt, config.getNumAltererBoltExecutors())
                 .shuffleGrouping(INTERFACE_MON_MONITOR_BOLT);
 

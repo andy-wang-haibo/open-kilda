@@ -20,7 +20,10 @@ import static org.openkilda.wfm.topology.ifmon.data.InterfaceMetricConst.TAG_POR
 import static org.openkilda.wfm.topology.ifmon.data.InterfaceMetricConst.TAG_SWITCHID;
 
 import org.openkilda.messaging.info.Datapoint;
+import org.openkilda.wfm.topology.ifmon.utils.AlertaAlertPayload;
+import org.openkilda.wfm.topology.ifmon.utils.AlertaClient;
 import org.openkilda.wfm.topology.ifmon.utils.MicroServiceClient;
+import org.openkilda.wfm.topology.ifmon.utils.PisSwitch;
 import org.openkilda.wfm.topology.ifmon.utils.Utils;
 
 import org.apache.storm.task.OutputCollector;
@@ -32,7 +35,9 @@ import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
+
 
 
 /*
@@ -43,41 +48,74 @@ public class InterfaceMetricAlerterBolt extends BaseRichBolt {
     private String tpnEndpoint;
     private String tpnUserName;
     private String tpnPassword;
-    
+
+    private String alertaEndpoint;
+    private String alertaApiKey;
+
     private OutputCollector collector;
     private MicroServiceClient msClient;
-    
+    private AlertaClient alertaClient;
+
     private static Logger logger = LoggerFactory.getLogger(InterfaceMetricAlerterBolt.class);
-    
-    public InterfaceMetricAlerterBolt(String tpnEndpoint, String tpnUser, String tpnPassword) {
+
+    public InterfaceMetricAlerterBolt(String tpnEndpoint, String tpnUser, String tpnPassword, 
+            String alertaEndpoint, String alertaApiKey) {
         this.tpnEndpoint = tpnEndpoint;
         this.tpnUserName = tpnUser;
         this.tpnPassword = tpnPassword;
+        
+        this.alertaEndpoint = alertaEndpoint;
+        this.alertaApiKey = alertaApiKey;
     }
-    
+
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         msClient = new MicroServiceClient(tpnEndpoint, tpnUserName, tpnPassword);
+        logger.debug("Successfully created micro service client");
         
+        alertaClient = new AlertaClient(alertaEndpoint, alertaApiKey);
+        logger.debug("Successfully created Alerta client");
+
     }
 
     @Override
     public void execute(Tuple tuple) {
-        
+
         final String data = tuple.getString(0);
-        
+
         try {
             Datapoint datapoint = MAPPER.readValue(data, Datapoint.class);
             String metric = datapoint.getMetric();
+            long timestamp = datapoint.getTimestamp();
             String switchId = datapoint.getTags().get(TAG_SWITCHID);
             String port = datapoint.getTags().get(TAG_PORT);
-            
+
             String legacyDpid = Utils.dpidKildaToLegacy(switchId);
-            String switchName = msClient.resolveSwitch(legacyDpid).getCommonName();
-            
+            PisSwitch sw = msClient.resolveSwitch(legacyDpid);
+            String switchName = sw.getCommonName();
+
             logger.error("Switch {} port {} metric {} found monotonically increasing", switchName, port, metric);
+
+            // Call PIS to get the switch port type: ISL, Customer, VNF, Exchange, and DIA
+            String portDescription = msClient.getSwitchPortDetails(sw, Integer.valueOf(port));
+            logger.info("Get {}:{} description from PIS: {}", switchName, port, portDescription);
             
+
+            // Create alerta alert
+            AlertaAlertPayload alert = AlertaAlertPayload.builder()
+                                       .origin("Kilda")
+                                       .environment("PROD")
+                                       .resource(String.format("%s:%s", switchName, port))
+                                       .event(metric)
+                                       .status("Open")
+                                       .service(Arrays.asList("Kilda"))
+                                       .createTime(timestamp)
+                                       .build();
+            
+            alertaClient.createAlert(alert);
+            logger.info("Created alert for {}:{} on {}", switchName, port, metric);
+                                      
         } catch (Exception e) {
             logger.error("Failed reading data:" + data, e);
         } finally {

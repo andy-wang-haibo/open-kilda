@@ -86,3 +86,10 @@ deploy-nbworker:
 kill-nbworker:
 	storm kill nbworker >/dev/null 2>&1
 
+deploy-ifmon:
+	storm jar target/WorkflowManager-1.0-SNAPSHOT-jar-with-dependencies.jar \
+		org.openkilda.wfm.topology.ifmon.InterfaceMonTopology \
+		--name=ifmon ${config}
+
+kill-ifmon:
+	storm kill ifmon >/dev/null 2>&1

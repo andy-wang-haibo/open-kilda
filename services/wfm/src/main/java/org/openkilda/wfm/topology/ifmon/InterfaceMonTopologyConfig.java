@@ -87,6 +87,12 @@ public interface InterfaceMonTopologyConfig extends AbstractTopologyConfig {
 
         @Key("tpn.password")
         String getTpnPassword();
+        
+        @Key("alerta.endpoint")
+        String getAlertaEndpoint();
+        
+        @Key("alerta.apikey")
+        String getAlertApiKey();
 
     }
 

@@ -205,11 +205,12 @@ public class MicroServiceClient {
      * @return  PIS Switch information
      * @throws MicroServiceException if something wrong
      */
-    public PisSwitchPortResponsePayload getSwitchPortDetail(String switchDpid, int switchPort)
+    @Deprecated
+    public IslPortResponse getSwitchPortDetail(String switchDpid, int switchPort)
             throws MicroServiceException {
 
         CloseableHttpResponse response = null;
-        PisSwitchPortResponsePayload payload = null;
+        IslPortResponse payload = null;
         try {
             refreshAccessTokenIfNeeded();
 
@@ -231,7 +232,7 @@ public class MicroServiceClient {
                 throw new MicroServiceException(errMsg);
             }
 
-            payload = mapper.readValue(responsePaylod, PisSwitchPortResponsePayload.class);
+            payload = mapper.readValue(responsePaylod, IslPortResponse.class);
 
             logger.debug("Successfully got {}:{} details:\n{}", switchDpid, switchPort, responsePaylod);
 
@@ -249,6 +250,75 @@ public class MicroServiceClient {
 
         return payload;
     }
+    
+    /**
+     * Extract a concise description for a TPN switch/port.
+     * 
+     * @param sw PIS Switch object, containing switch basic information, like common name, etc.
+     * @param switchPort the number of the port in question
+     * @return a short description capturing the relevant information for the particular port type
+     */
+    public String getSwitchPortDetails(PisSwitch sw, int switchPort) throws MicroServiceException {
+        
+        CloseableHttpResponse response = null;
+        
+        try {
+            refreshAccessTokenIfNeeded();
+            
+            String getSwitchPortDetailUrl = String.format("https://%s/pis/1.0.0/switchuuid/%s/port/%d", 
+                    tpnEndpoint, sw.getUuid(), switchPort);
+            
+            HttpGet getSwitchPortMethod = new HttpGet(getSwitchPortDetailUrl);
+            getSwitchPortMethod.addHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", accessToken));
+            response = httpClient.execute(getSwitchPortMethod);
+            
+            String responsePayload = EntityUtils.toString(response.getEntity());
+            EntityUtils.consume(response.getEntity());
+            
+            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+                String errMsg = String.format("Failed to get switch/port information from pis for %s(%s):%d", 
+                        sw.getCommonName(), sw.getDpid(), switchPort);
+                logger.debug(errMsg + "\n{}", responsePayload);
+                throw new MicroServiceException(errMsg);
+            }
+            
+            // Get a short description of the port according to the port type
+            GenericPortReponse generic = mapper.readValue(responsePayload, GenericPortReponse.class);
+            String description = null;
+            PortAssignmentType assignment = PortAssignmentType.valueOf(generic.getAssignmentType());
+            switch (assignment) {
+                case ISL:
+                    description = mapper.readValue(responsePayload, IslPortResponse.class).toString();
+                    break;
+                case CUSTOMER:
+                    description = mapper.readValue(responsePayload, CustomerPortResponse.class).toString();
+                    break;
+                case VNF:
+                    description = mapper.readValue(responsePayload, VnfPortResponse.class).toString();
+                    break;
+                case DIA:
+                    description = mapper.readValue(responsePayload, DiaPortResponse.class).toString();
+                    break;
+                case EXCHANGE:
+                    description = mapper.readValue(responsePayload, ExchangePortResponse.class).toString();
+                    break;
+                default:
+                    //Just to silence checkstyle
+            }
+            
+            return description;
+        } catch (IOException e) {
+            throw new MicroServiceException(e);
+        } finally {
+            if (response != null) {
+                try {
+                    response.close();
+                } catch (Exception e) {
+                    //pass
+                }
+            }
+        }
+    }
 
     private void refreshAccessTokenIfNeeded() throws MicroServiceException {
         if (tokenExirationTime - System.currentTimeMillis() < TimeUnit.SECONDS.toMillis(10)) {
@@ -256,5 +326,19 @@ public class MicroServiceClient {
             getAuthToken();
         }
     }
-
+    
+    
+    static enum PortAssignmentType {
+        ISL("ISL"), CUSTOMER("Customer"), VNF("VNF"), DIA("DIA"), EXCHANGE("Exchange");
+        
+        private final String type;
+        
+        PortAssignmentType(String type) {
+            this.type = type;
+        }
+        
+        public String getType() {
+            return type;
+        }
+    }
 }
